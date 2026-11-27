@@ -1,6 +1,7 @@
 """业务路由汇总：所有模块共用一套资源路由，由领域服务完成分派。"""
 from __future__ import annotations
 
-from app.routers import resource
+from app.routers import distribution, resource
 
-ROUTERS = [resource]
+# 分发恢复路由含固定前缀，需在通用动态路由 /api/{module} 之前注册。
+ROUTERS = [distribution, resource]

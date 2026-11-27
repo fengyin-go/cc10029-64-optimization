@@ -47,11 +47,24 @@
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="String(row.id)" :data-testid="`row-${row.id}`" :data-status="String(row.status)">
-          <td v-for="column in meta.fields" :key="column">{{ row[column] ?? '—' }}</td>
-          <td>{{ row.status }}</td>
+          <td v-for="column in meta.fields" :key="column">
+            <span v-if="column === '交付状态'" :class="['badge', deliveryBadgeClass(String(row[column] ?? ''))]">
+              {{ row[column] ?? '—' }}
+            </span>
+            <span v-else>{{ row[column] ?? '—' }}</span>
+          </td>
+          <td>
+            {{ row.status }}
+            <span v-if="row.分发状态 === '进行中'" class="badge warn" data-testid="delivery-pending">
+              分发未完成
+            </span>
+            <span v-else-if="row.分发状态 === '已完成'" class="badge ok" data-testid="delivery-done">
+              交付完成
+            </span>
+          </td>
           <td class="row-actions">
             <button
-              v-for="action in meta.actions"
+              v-for="action in visibleActions(row)"
               :key="action"
               class="link"
               type="button"
@@ -129,6 +142,21 @@ const statusSummary = computed(() =>
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+// 「补发分发」仅对存在进行中（部分失败）分发的纪要显示，让主任认出是回到自己的分发入口续办。
+function visibleActions(row: EntryRow): string[] {
+  if (meta.key !== 'review_meeting') return meta.actions
+  return meta.actions.filter((action) =>
+    action === '补发分发' ? row.分发状态 === '进行中' : true,
+  )
+}
+
+// 交付状态徽标配色：与纪要页的分发徽标语义保持一致。
+function deliveryBadgeClass(value: string): string {
+  if (value === '交付完成') return 'ok'
+  if (value === '分发未完成') return 'warn'
+  return 'muted'
+}
 
 function resetFilters() {
   filters.value = {}
